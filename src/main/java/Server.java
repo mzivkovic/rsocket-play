@@ -9,20 +9,20 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.UnicastProcessor;
+import reactor.core.scheduler.Schedulers;
 
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Server {
 
     public static final int PORT = 8082;
 
-    private static ConcurrentLinkedDeque<String> deque = new ConcurrentLinkedDeque<>();
+    private static LinkedBlockingDeque<String> deque = new LinkedBlockingDeque<>();
 
     public static void main(String[] args) {
 
         deque.add("Milan");
-        UnicastProcessor<String> strings = UnicastProcessor.create(deque);
+
 
         //SERVER
         RSocketFactory.receive()
@@ -37,24 +37,28 @@ public class Server {
 
     private static class DefaultSimpleService extends AbstractRSocket {
         private RSocket client;
-        private ConcurrentLinkedDeque<String> deque;
+        private LinkedBlockingDeque<String> deque;
+        private final Flux<String> flux;
 
-        public DefaultSimpleService(RSocket client, ConcurrentLinkedDeque<String> deque) {
+        public DefaultSimpleService(RSocket client, LinkedBlockingDeque<String> deque) {
             this.client = client;
             this.deque = deque;
+
+            flux = Flux.<String>create(sink -> {
+                try {
+                    while (true) {
+                        sink.next(deque.takeLast());
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).subscribeOn(Schedulers.elastic());
         }
 
         @Override
         public Flux<Payload> requestStream(Payload payload) {
-            return UnicastProcessor.create(deque)
+            return flux
                     .map(s -> DefaultPayload.create(String.valueOf(s)));
-
-//            return Mono.just(Integer.valueOf(payload.getDataUtf8()))
-//                    .doOnNext(i -> System.out.println("Server received:" + i))
-//                    .flatMapMany(i -> Flux.range(0, i))
-//                    .doOnNext(i -> System.out.println("Sending:" + i))
-//                    .map(i -> DefaultPayload.create(String.valueOf(i)));
-
         }
 
         @Override
@@ -83,4 +87,5 @@ public class Server {
             request(1);
         }
     }
+
 }
