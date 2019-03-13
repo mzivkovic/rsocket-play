@@ -36,12 +36,12 @@ public class Server {
     }
 
     private static class DefaultSimpleService extends AbstractRSocket {
-        private RSocket client;
+        private RSocket other;
         private LinkedBlockingDeque<String> deque;
         private final Flux<String> flux;
 
-        public DefaultSimpleService(RSocket client, LinkedBlockingDeque<String> deque) {
-            this.client = client;
+        public DefaultSimpleService(RSocket other, LinkedBlockingDeque<String> deque) {
+            this.other = other;
             this.deque = deque;
 
             flux = Flux.<String>create(sink -> {
@@ -49,8 +49,8 @@ public class Server {
                     while (true) {
                         sink.next(deque.takeLast());
                     }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                } catch ( InterruptedException ex ) {
+                    throw new RuntimeException( ex );
                 }
             }).subscribeOn(Schedulers.elastic());
         }
@@ -58,7 +58,7 @@ public class Server {
         @Override
         public Flux<Payload> requestStream(Payload payload) {
             return flux
-                    .map(s -> DefaultPayload.create(String.valueOf(s)));
+                    .map( s -> DefaultPayload.create( String.valueOf( s ) ) );
         }
 
         @Override

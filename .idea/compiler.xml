@@ -9,5 +9,8 @@
         <module name="rsocket" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="rsocket" target="9" />
+    </bytecodeTargetLevel>
   </component>
 </project>
