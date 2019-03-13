@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 class SpeakListenAcceptor extends AbstractRSocket {
 
-    private static final int DELAY = 2;
+    private static final int DELAY = 5;
     private final String name;
     private final RSocket other;
     private final List<String> text;
@@ -22,7 +22,6 @@ class SpeakListenAcceptor extends AbstractRSocket {
         this.name = name;
         this.other = other;
         this.text = text;
-//        other.requestStream(  )
     }
 
 
@@ -42,7 +41,6 @@ class SpeakListenAcceptor extends AbstractRSocket {
         other.requestStream( DefaultPayload.create( String.valueOf( speakLimit ) ) )
                 .map( Payload::getDataUtf8 )
                 .subscribe();
-//                .doOnNext( this::listen );
     }
 
     private void speak ( final String line ) {
@@ -50,9 +48,6 @@ class SpeakListenAcceptor extends AbstractRSocket {
     }
 
 
-    private void listen ( final String line ) {
-        System.out.println( name + " : " + line );
-    }
 
 
     private Flux<String> getText ( final Payload payload ) {
